@@ -2,6 +2,7 @@ import pandas as pd
 import tkinter as tk
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.neighbors import NearestNeighbors
+import random
 
 df = pd.read_json('test.json')
 
@@ -15,13 +16,18 @@ vocab = set(mlb.classes_)
 knn = NearestNeighbors(n_neighbors=5, metric='cosine')  # cosine-Distanz funktioniert gut
 knn.fit(X)
 
+rnd_err_msg = {"What do you want me to do now?",
+               "I suggest: a grocery trip",
+               "Time to sin and order take out after all",
+               "Perhaps a water soup with some ice?"}
+
 #nach Zutaten fragen
 def find_recipes():
     user_input =entry.get().strip()
 
     if not user_input:
         # da evtl die funny fehlermeldungen? hahahaha
-        output_text.set("No ingredients entered.")
+        output_text.set(random.choice(list(rnd_err_msg)))
         return
 
     user_ingredients = [x.strip().lower() for x in user_input.split(',') if x.strip()]
