@@ -46,12 +46,17 @@ def find_recipes():
 
     scores = []
     for i, recipe_vector in enumerate(X):
+        # flatten the recipe vector if it's a sparse matrix
         rv = recipe_vector.toarray().flatten() if hasattr(recipe_vector, "toarray") else recipe_vector
+        # create a mask: True where the recipe requires an ingredient
         needed = rv == 1
+        # check if the user has those required ingredients
         has = user_vector[0][needed]
+        # calculate score
         score = np.sum(has) / np.sum(needed)
         scores.append((i, score))
 
+    # sort recipes by score (best match first)
     scores.sort(key=lambda x: x[1], reverse=True)
 
     results = []
@@ -59,8 +64,6 @@ def find_recipes():
         results.append(f"{rank+1}. {df.iloc[idx]['id']} (Score: {score:.2f})")
 
     output_text.set("\n".join(results))
-
-
 
 
 # --- UI --- #
@@ -80,12 +83,13 @@ output_text = tk.StringVar()
 output_label = tk.Label(root, textvariable=output_text, justify="left", anchor="w")
 output_label.pack(padx=10, pady=10, fill='both')
 
-# --- Auto-Complete Zutaten-Vorschläge --- #
+# --- Auto-Complete Recipe-Suggestions --- #
 
 suggestion_box = tk.Listbox(root, height=5)
 suggestion_box.pack(pady=(0, 5))
-suggestion_box.place_forget()  # zunächst versteckt
+suggestion_box.place_forget()  # hidden at first
 
+# updates the initial suggestions
 def update_suggestions(event):
     typed = entry.get().split(',')[-1].strip().lower()
     if typed == "":
@@ -94,17 +98,17 @@ def update_suggestions(event):
     
     matches = [item for item in vocab if item.startswith(typed)]
     if matches:
-        # Sortierung: exakte Übereinstimmung ganz vorne, dann kürzere zuerst, dann alphabetisch
+        # sorting: exact matches at first, then shortest first, then alphabetical
         matches.sort(key=lambda x: (x != typed, len(x), x))
         
         suggestion_box.delete(0, tk.END)
-        for match in matches[:10]:  # max 10 Vorschläge
+        for match in matches[:10]:  # 10 suggestions max
             suggestion_box.insert(tk.END, match)
         suggestion_box.place(x=entry.winfo_x(), y=entry.winfo_y() + entry.winfo_height())
     else:
         suggestion_box.place_forget()
 
-
+# prints the determined suggestions
 def insert_suggestion(event):
     if suggestion_box.curselection():
         selected = suggestion_box.get(suggestion_box.curselection())
