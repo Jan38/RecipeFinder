@@ -30,7 +30,7 @@ def find_recipes():
 
     # if user input is empty (= no input/ingredients entered)
     if not user_input:
-        output_text.set("No ingredients entered.")
+        output_text.set(random.choice(list(rnd_err_msg)))
         return
 
     # creates a set of all with ',' seperated, entered ingredients, in lower case and without spaces
