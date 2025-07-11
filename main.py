@@ -1,11 +1,12 @@
 import pandas as pd
 import tkinter as tk
+import numpy as np
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.neighbors import NearestNeighbors
 import random
 
 # --- logic --- #
-df = pd.read_json('test.json')
+df = pd.read_json('renamed_recipes.json')
 
 # vectorise and convert to matrix. 1 = existing, 0 = non-existing
 mlb = MultiLabelBinarizer()
@@ -25,13 +26,11 @@ rnd_err_msg = {"What do you want me to do now?",
 
 # asks for ingredients and finds the closest fitting neighbours
 def find_recipes():
-    # strip removes empty spaces
-    user_input =entry.get().strip()
+    user_input = entry.get().strip()
 
     # if user input is empty (= no input/ingredients entered)
     if not user_input:
-        # outputs a random error message from a list of possible funny responses
-        output_text.set(random.choice(list(rnd_err_msg)))
+        output_text.set("No ingredients entered.")
         return
 
     # creates a set of all with ',' seperated, entered ingredients, in lower case and without spaces
@@ -44,19 +43,29 @@ def find_recipes():
         return
 
     user_vector = mlb.transform([user_ingredients])
-    # finds best fitting recipes
-    distances, indices = knn.kneighbors(user_vector)
+
+    scores = []
+    for i, recipe_vector in enumerate(X):
+        rv = recipe_vector.toarray().flatten() if hasattr(recipe_vector, "toarray") else recipe_vector
+        needed = rv == 1
+        has = user_vector[0][needed]
+        score = np.sum(has) / np.sum(needed)
+        scores.append((i, score))
+
+    scores.sort(key=lambda x: x[1], reverse=True)
 
     results = []
-    for i , idx in enumerate(indices[0]):
-        similarity = 1 - distances[0][i]
-        results.append(f"{i+1}. {df.iloc[idx]['id']} (Score: {similarity:.2f})")
+    for rank, (idx, score) in enumerate(scores[:5]):
+        results.append(f"{rank+1}. {df.iloc[idx]['id']} (Score: {score:.2f})")
 
     output_text.set("\n".join(results))
 
 
+
+
 # --- UI --- #
 root = tk.Tk()
+root.geometry("600x400")
 root.title("Recipe Finder")
 
 tk.Label(root, text="What ingredients do you have? (e.g. milk, sugar, eggs...)").pack(pady=5)
@@ -70,5 +79,44 @@ submit_btn.pack(pady=5)
 output_text = tk.StringVar()
 output_label = tk.Label(root, textvariable=output_text, justify="left", anchor="w")
 output_label.pack(padx=10, pady=10, fill='both')
+
+# --- Auto-Complete Zutaten-Vorschläge --- #
+
+suggestion_box = tk.Listbox(root, height=5)
+suggestion_box.pack(pady=(0, 5))
+suggestion_box.place_forget()  # zunächst versteckt
+
+def update_suggestions(event):
+    typed = entry.get().split(',')[-1].strip().lower()
+    if typed == "":
+        suggestion_box.place_forget()
+        return
+    
+    matches = [item for item in vocab if item.startswith(typed)]
+    if matches:
+        # Sortierung: exakte Übereinstimmung ganz vorne, dann kürzere zuerst, dann alphabetisch
+        matches.sort(key=lambda x: (x != typed, len(x), x))
+        
+        suggestion_box.delete(0, tk.END)
+        for match in matches[:10]:  # max 10 Vorschläge
+            suggestion_box.insert(tk.END, match)
+        suggestion_box.place(x=entry.winfo_x(), y=entry.winfo_y() + entry.winfo_height())
+    else:
+        suggestion_box.place_forget()
+
+
+def insert_suggestion(event):
+    if suggestion_box.curselection():
+        selected = suggestion_box.get(suggestion_box.curselection())
+        current_text = entry.get()
+        parts = [x.strip() for x in current_text.split(',')]
+        parts[-1] = selected
+        new_text = ', '.join(parts) + ', '
+        entry.delete(0, tk.END)
+        entry.insert(0, new_text)
+        suggestion_box.place_forget()
+
+entry.bind('<KeyRelease>', update_suggestions)
+suggestion_box.bind("<<ListboxSelect>>", insert_suggestion)
 
 root.mainloop()
