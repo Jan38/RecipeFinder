@@ -6,7 +6,7 @@ from sklearn.neighbors import NearestNeighbors
 import random
 
 # --- logic --- #
-df = pd.read_json('test.json')
+df = pd.read_json('renamed_recipes.json')
 
 # vectorise and convert to matrix. 1 = existing, 0 = non-existing
 mlb = MultiLabelBinarizer()
@@ -26,21 +26,11 @@ rnd_err_msg = {"What do you want me to do now?",
 
 # asks for ingredients and finds the closest fitting neighbours
 def find_recipes():
-<<<<<<< HEAD
     user_input = entry.get().strip()
-=======
-    # strip removes empty spaces
-    user_input =entry.get().strip()
->>>>>>> 85ed6439b23840d5ae27bbf2c5ad7ddfdab5de6b
 
     # if user input is empty (= no input/ingredients entered)
     if not user_input:
-<<<<<<< HEAD
         output_text.set("No ingredients entered.")
-=======
-        # outputs a random error message from a list of possible funny responses
-        output_text.set(random.choice(list(rnd_err_msg)))
->>>>>>> 85ed6439b23840d5ae27bbf2c5ad7ddfdab5de6b
         return
 
     # creates a set of all with ',' seperated, entered ingredients, in lower case and without spaces
@@ -53,7 +43,6 @@ def find_recipes():
         return
 
     user_vector = mlb.transform([user_ingredients])
-<<<<<<< HEAD
 
     scores = []
     for i, recipe_vector in enumerate(X):
@@ -64,10 +53,6 @@ def find_recipes():
         scores.append((i, score))
 
     scores.sort(key=lambda x: x[1], reverse=True)
-=======
-    # finds best fitting recipes
-    distances, indices = knn.kneighbors(user_vector)
->>>>>>> 85ed6439b23840d5ae27bbf2c5ad7ddfdab5de6b
 
     results = []
     for rank, (idx, score) in enumerate(scores[:5]):
